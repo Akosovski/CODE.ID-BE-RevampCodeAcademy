@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { RoomI } from './talent.interface';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Employee } from 'output/entities/Employee';
 
 @Injectable()
 export class TalentService {
-  private readonly roomI: RoomI[] = [];
-
-  findAll(): RoomI[] {
-    return this.roomI;
+  public employees: Employee[] = [];
+  findAll(): Employee[] {
+    return this.employees;
   }
 }
