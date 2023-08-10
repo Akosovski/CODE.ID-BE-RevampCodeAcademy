@@ -5,8 +5,12 @@ import { Employee } from 'output/entities/Employee';
 
 @Injectable()
 export class TalentService {
-  public employees: Employee[] = [];
-  findAll(): Employee[] {
-    return this.employees;
+  constructor(
+    @InjectRepository(Employee)
+    private readonly employeesRepository: Repository<Employee>,
+  ) {}
+
+  public async findAll() {
+    return await this.employeesRepository.find();
   }
 }

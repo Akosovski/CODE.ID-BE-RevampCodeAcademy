@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AppController } from './app.controller';
 import { TalentController } from './talent/talent.controller';
+import { AppService } from './app.service';
 import { TalentService } from './talent/talent.service';
-import { Employee } from 'output/entities/Employee';
+import { TalentModule } from './talent/talent.module';
 
 @Module({
   imports: [
@@ -15,12 +15,12 @@ import { Employee } from 'output/entities/Employee';
       username: 'postgres',
       password: '25651612',
       database: 'revampdb',
-      entities: ['output/entities/*.js'],
-      synchronize: false,
+      entities: ['dist/output/entities/*.js'],
+      autoLoadEntities: true,
     }),
-    TypeOrmModule.forFeature([Employee]),
+    TalentModule,
   ],
-  controllers: [AppController, TalentController],
-  providers: [AppService, TalentService],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
