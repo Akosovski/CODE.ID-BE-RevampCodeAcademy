@@ -216,4 +216,53 @@ export class TalentService {
 
     return employee;
   }
+
+  public async Insert(fields: any) {
+    try {
+      //Insert into hr.Employee Table
+      const employee = await this.serviceEmp.save({
+        empEntityId: fields.empEntityId,
+        empEmpNumber: fields.empEmpNumber,
+        empNationalId: fields.empNationalId,
+        empBirthDate: fields.empBirthDate,
+        empMaritalStatus: fields.empMaritalStatus,
+        empGender: fields.empGender,
+        empHireDate: fields.empHireDate,
+        empSalariedFlag: fields.empSalariedFlag,
+        empVacationHours: fields.empVacationHours,
+        empSickleaveHours: fields.empSickleaveHours,
+        empCurrentFlag: fields.empCurrentFlag,
+        empModifiedDate: new Date(),
+        empType: fields.empType,
+        empJoroId: fields.empJoroId,
+        empEmpEntityId: fields.empEmpEntityId,
+      });
+
+      //Insert into hr.EmployeePayHistory Table
+      await this.serviceEmpPayHistory.save({
+        ephiEntityId: employee.empEntityId,
+        ephiRateSalary: fields.ephiRateSalary,
+        ephiPayFrequence: fields.ephiPayFrequence,
+        ephiModifiedDate: new Date(),
+      });
+
+      //Insert into hr.EmployeeDepartmentHistory Table
+      await this.serviceEmpDeptHistory.save({
+        edhiId: employee.empEntityId,
+        edhiStartDate: fields.edhiStartDate,
+        edhiEndDate: fields.edhiEndDate,
+        edhiModifiedDate: new Date(),
+        edhiDeptId: fields.edhiDeptId,
+      });
+
+      const result = await this.serviceEmp.findOne({
+        where: { empEntityId: employee.empEmpEntityId },
+        relations: ['employeeDepartmentHistories', 'employeePayHistories'],
+      });
+
+      return result;
+    } catch (error) {
+      return error.message;
+    }
+  }
 }

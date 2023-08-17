@@ -38,4 +38,9 @@ export class TalentController {
   public async getOne(@Param('id') id: number) {
     return this.TalentService.findOne(id);
   }
+
+  @Post('create')
+  public async create(@Body() fields: any) {
+    return this.TalentService.Insert(fields);
+  }
 }
