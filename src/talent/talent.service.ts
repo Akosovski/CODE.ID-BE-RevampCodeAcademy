@@ -31,7 +31,13 @@ export class TalentService {
     const skippedItems = (options.page - 1) * options.limit;
     const totalCount = await this.serviceEmp.count();
     const employee = await this.serviceEmp.find({
-      relations: ['empEntity'],
+      relations: [
+        'empEntity',
+        'employeeClientContracts',
+        'employeeClientContracts.eccoStatus',
+        'batches',
+        'programEntities',
+      ],
       take: options.limit,
       skip: skippedItems,
     });
