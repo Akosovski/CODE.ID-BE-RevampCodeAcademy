@@ -1,9 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
-import { TalentController } from './talent/talent.controller';
 import { AppService } from './app.service';
-import { TalentService } from './talent/talent.service';
 import { TalentModule } from './talent/talent.module';
 
 @Module({

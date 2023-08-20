@@ -1,5 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  DefaultValuePipe,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { TalentService } from './talent.service';
 import { PaginationOptions } from './dto/pagination.dto';
 
@@ -7,21 +16,15 @@ import { PaginationOptions } from './dto/pagination.dto';
 export class TalentController {
   constructor(private TalentService: TalentService) {}
 
-  @Get()
-  public async findAll() {
-    return this.TalentService.findAll();
-  }
-
-  @Get('search')
-  public async search(@Query() options: PaginationOptions) {
-    const room = this.TalentService.searchBy(options);
-    return room;
-  }
-
   @Get('paging')
-  public async getAllLimit(@Query() options: PaginationOptions) {
-    const room = this.TalentService.findAllLimit(options);
-    return room;
+  public async getAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(4), ParseIntPipe) limit: number,
+  ) {
+    return this.TalentService.getAll({
+      page: page,
+      limit: limit,
+    });
   }
 
   @Get('salaryhistory/:id')

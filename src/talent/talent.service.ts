@@ -2,8 +2,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Employee } from 'output/entities/Employee';
+import { Users } from 'output/entities/Users';
 import { EmployeeDepartmentHistory } from 'output/entities/EmployeeDepartmentHistory';
 import { EmployeePayHistory } from 'output/entities/EmployeePayHistory';
+import { Batch } from 'output/entities/Batch';
 import { Like, Repository } from 'typeorm';
 import { PaginationOptions } from './dto/pagination.dto';
 import { EmployeeInterface } from './talent.interface';
@@ -12,154 +14,39 @@ import { EmployeeInterface } from './talent.interface';
 export class TalentService {
   constructor(
     @InjectRepository(Employee)
-    private readonly serviceEmp: Repository<Employee>,
+    private serviceEmp: Repository<Employee>,
     @InjectRepository(EmployeePayHistory)
     private serviceEmpPayHistory: Repository<EmployeePayHistory>,
     @InjectRepository(EmployeeDepartmentHistory)
     private serviceEmpDeptHistory: Repository<EmployeeDepartmentHistory>,
+    @InjectRepository(Batch)
+    private serviceBatch: Repository<Batch>,
+    @InjectRepository(Users)
+    private serviceUsers: Repository<Users>,
   ) {}
 
-  public async findAll() {
-    return await this.serviceEmp.find();
-  }
-
-  public async searchBy(
+  public async getAll(
     options: PaginationOptions,
   ): Promise<EmployeeInterface> {
-    const skippedItems = (options.pageno - 1) * options.pagesize;
-    let totalCount = await this.serviceEmp.count();
-    if (options.name !== '' || options.status !== '') {
-      if (options.name === '') {
-        const employee = await this.serviceEmp.find({
-          select: {
-            employeeClientContracts: {
-              eccoStatus: {
-                status: true,
-              },
-            },
-          },
-          relations: ['employeeClientContracts'],
-          take: options.pagesize,
-          skip: skippedItems,
-          where: {
-            employeeClientContracts: {
-              eccoStatus: {
-                status: Like(`%${options.status}%`),
-              },
-            },
-          },
-        });
-        totalCount = await this.serviceEmp.count({
-          where: {
-            employeeClientContracts: {
-              eccoStatus: {
-                status: Like(`%${options.status}%`),
-              },
-            },
-          },
-        });
-        return {
-          totalCount,
-          pageno: options.pageno,
-          pagesize: options.pagesize,
-          data: employee,
-        };
-      }
-      if (options.status === '') {
-        const employee = await this.serviceEmp.find({
-          select: {
-            empEntity: {
-              userFirstName: true,
-            },
-          },
-          relations: ['empEntity'],
-          take: options.pagesize,
-          skip: skippedItems,
-          where: {
-            empEntity: {
-              userFirstName: Like(`%${options.name}%`),
-            },
-          },
-        });
-        totalCount = await this.serviceEmp.count({
-          where: {
-            empEntity: {
-              userFirstName: Like(`%${options.name}%`),
-            },
-          },
-        });
-        return {
-          totalCount,
-          pageno: options.pageno,
-          pagesize: options.pagesize,
-          data: employee,
-        };
-      }
-      const employee = await this.serviceEmp.find({
-        select: {
-          empEntity: {
-            userFirstName: true,
-          },
-          employeeClientContracts: {
-            eccoStatus: {
-              status: true,
-            },
-          },
-        },
-        relations: ['empEntity', 'employeeClientContracts'],
-        take: options.pagesize,
-        skip: skippedItems,
-        where: [
-          {
-            empEntity: {
-              userFirstName: Like(`%${options.name}%`),
-            },
-            employeeClientContracts: {
-              eccoStatus: {
-                status: Like(`%${options.status}%`),
-              },
-            },
-          },
-        ],
-      });
-      totalCount = await this.serviceEmp.count({
-        where: [
-          {
-            empEntity: {
-              userFirstName: Like(`%${options.name}%`),
-            },
-            employeeClientContracts: {
-              eccoStatus: {
-                status: Like(`%${options.status}%`),
-              },
-            },
-          },
-        ],
-      });
-      return {
-        totalCount,
-        pageno: options.pageno,
-        pagesize: options.pagesize,
-        data: employee,
-      };
-    } else {
-      const employee = await this.serviceEmp.find({
-        take: options.pagesize,
-        skip: skippedItems,
-      });
-      return {
-        totalCount,
-        pageno: options.pageno,
-        pagesize: options.pagesize,
-        data: employee,
-      };
-    }
+    const skippedItems = (options.page - 1) * options.limit;
+    const totalCount = await this.serviceEmp.count();
+    const employee = await this.serviceEmp.find({
+      relations: ['empEntity'],
+      take: options.limit,
+      skip: skippedItems,
+    });
+    return {
+      totalCount,
+      page: options.page,
+      limit: options.limit,
+      data: employee,
+    };
   }
 
   public async findAllLimit(
     options: PaginationOptions,
   ): Promise<EmployeeInterface> {
-    const skippedItems = (options.pageno - 1) * options.pagesize;
+    const skippedItems = (options.page - 1) * options.limit;
     const totalCount = await this.serviceEmp.count();
     const employee = await this.serviceEmp.find({
       relations: [
@@ -170,7 +57,7 @@ export class TalentService {
         'employeeDepartmentHistories.edhiDept',
         'employeePayHistories',
       ],
-      take: options.pagesize,
+      take: options.limit,
       skip: skippedItems,
       order: {
         empEntityId: 'ASC',
@@ -178,8 +65,8 @@ export class TalentService {
     });
     return {
       totalCount,
-      pageno: options.pageno,
-      pagesize: options.pagesize,
+      page: options.page,
+      limit: options.limit,
       data: employee,
     };
   }

@@ -4,7 +4,7 @@ import { EmployeeClientContract } from 'output/entities/EmployeeClientContract';
 
 export class EmployeeInterface {
   data: Employee[];
-  pageno: number;
-  pagesize: number;
+  page: number;
+  limit: number;
   totalCount: number;
 }
