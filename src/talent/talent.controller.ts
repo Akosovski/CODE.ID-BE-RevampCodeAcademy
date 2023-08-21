@@ -17,6 +17,7 @@ import { PaginationOptions } from './dto/pagination.dto';
 export class TalentController {
   constructor(private TalentService: TalentService) {}
 
+  // Get All Talents
   @Get('paging')
   public async getAll(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
@@ -44,8 +45,6 @@ export class TalentController {
     });
   }
 
-  // Get One Employee
-
   @Get('salaryhistory/:id')
   public async getEmployeePayHistory(@Param('id') id: number) {
     return this.TalentService.findEmployeePayHistory(id);
@@ -60,6 +59,20 @@ export class TalentController {
   @Get('details/:id')
   public async getOneEmployee(@Param('id') id: number) {
     return this.TalentService.findOne(id);
+  }
+  
+  // Get All Employees
+  @Get('employees')
+  public async getAllLimit(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(4), ParseIntPipe) limit: number,
+  ) {
+    return this.TalentService.findAllLimit({
+      page: page,
+      limit: limit,
+      name: '',
+      status: '',
+    });
   }
 
   @Post('create')
