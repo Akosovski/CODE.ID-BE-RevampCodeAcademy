@@ -40,6 +40,9 @@ export class TalentService {
       ],
       take: options.limit,
       skip: skippedItems,
+      order: {
+        empEntityId: 'ASC'
+      },
     });
     return {
       totalCount,
@@ -47,6 +50,58 @@ export class TalentService {
       limit: options.limit,
       data: employee,
     };
+  }
+
+  /* Search */
+  public async search(
+    options: PaginationOptions,
+  ): Promise<EmployeeInterface> {
+    const skippedItems = (options.page - 1) * options.limit;
+    let totalCount = await this.serviceEmp.count();
+    if (options.name || options.status) {
+      // Fetch Query
+      const employee = await this.serviceEmp.find({
+        relations: [
+          'empEntity',
+          'employeeClientContracts',
+          'employeeClientContracts.eccoStatus',
+          'batches',
+          'programEntities',
+        ],
+        take: options.limit,
+        skip: skippedItems,
+        where: [
+          {
+            'empMaritalStatus': Like(`%${options.name}%`),
+          },
+        ],
+        order: {
+          empEntityId: 'DESC',
+        },
+      });
+      // Get TotalCount
+      totalCount = await this.serviceEmp.count({
+        where: [
+          {
+            empMaritalStatus: Like(`%${options.name}%`),
+          },
+        ],
+      });
+      return {
+        totalCount,
+        page: options.page,
+        limit: options.limit,
+        data: employee,
+      };
+    }
+  }
+
+  // Find One Talent/Employee
+  public async findOneEmployee(id: number) {
+    const employee = await this.serviceEmp.findOne({
+      where: { empEntityId: id },
+    });
+    return employee;
   }
 
   public async findAllLimit(
@@ -75,13 +130,15 @@ export class TalentService {
       limit: options.limit,
       data: employee,
     };
+  } catch (error) {
+    console.error("Error in search:", error);
+    throw error; 
   }
 
   public async findEmployeePayHistory(id: number) {
     const employeepayhistory = await this.serviceEmpPayHistory.findOne({
       where: { ephiEntityId: id },
     });
-
     return employeepayhistory;
   }
 

@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Body,
@@ -24,8 +25,26 @@ export class TalentController {
     return this.TalentService.getAll({
       page: page,
       limit: limit,
+      name: '',
+      status: '',
     });
   }
+
+  @Get('search')
+  public async search(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(4), ParseIntPipe) limit: number,
+  ) {
+    console.log("Page :", page);
+    return this.TalentService.getAll({
+      page: page,
+      limit: limit,
+      name: 'S',
+      status: 'S',
+    });
+  }
+
+  // Get One Employee
 
   @Get('salaryhistory/:id')
   public async getEmployeePayHistory(@Param('id') id: number) {
@@ -37,8 +56,9 @@ export class TalentController {
     return this.TalentService.findDepartmentHistory(id);
   }
 
-  @Get(':id')
-  public async getOne(@Param('id') id: number) {
+  // Get One Employee
+  @Get('details/:id')
+  public async getOneEmployee(@Param('id') id: number) {
     return this.TalentService.findOne(id);
   }
 
