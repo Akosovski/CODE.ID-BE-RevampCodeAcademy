@@ -5,13 +5,12 @@ import { Employee } from 'output/entities/Employee';
 import { Users } from 'output/entities/Users';
 import { EmployeeDepartmentHistory } from 'output/entities/EmployeeDepartmentHistory';
 import { EmployeePayHistory } from 'output/entities/EmployeePayHistory';
-import { Batch } from 'output/entities/Batch';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { PaginationOptions } from './dto/pagination.dto';
-import { EmployeeInterface, UsersInterface } from './talent.interface';
+import { EmployeeInterface } from './employee.interface';
 
 @Injectable()
-export class TalentService {
+export class EmployeeService {
   constructor(
     @InjectRepository(Employee)
     private serviceEmp: Repository<Employee>,
@@ -19,75 +18,11 @@ export class TalentService {
     private serviceEmpPayHistory: Repository<EmployeePayHistory>,
     @InjectRepository(EmployeeDepartmentHistory)
     private serviceEmpDeptHistory: Repository<EmployeeDepartmentHistory>,
-    @InjectRepository(Batch)
-    private serviceBatch: Repository<Batch>,
     @InjectRepository(Users)
     private serviceUsers: Repository<Users>,
   ) {}
 
-  // Get All Talents
-  public async getAll(options: PaginationOptions): Promise<UsersInterface> {
-    const queryBuilder = this.serviceUsers.createQueryBuilder('talents');
-
-    queryBuilder
-      .leftJoinAndSelect('talents.batchTrainees', 'batchTrainees') // Join to Batch Trainees
-      .leftJoinAndSelect('batchTrainees.batrBatch', 'batrBatch') // Join to Batch
-      .addSelect(['batrBatch.batchName']) // Get Batch Name
-      .leftJoin('batrBatch.batchEntity', 'batchEntity') // Join to Program Entity
-      .addSelect(['batchEntity.progTitle']) // Get Program Title
-      .orderBy('talents.userEntityId', 'ASC')
-  
-    queryBuilder.where('talents.userCurrentRole IN (:...roles)', { roles: [2, 12] });
-
-    // Seperate Query to Count the Totals
-    const countQueryBuilder = this.serviceUsers.createQueryBuilder('talents');
-    countQueryBuilder.where('talents.userCurrentRole IN (:...roles)', { roles: [2, 12] });
-    const totalCount = await countQueryBuilder.getCount();
-
-    const talents = await queryBuilder.getMany();
-
-    return {
-      totalCount,
-      page: options.page,
-      data: talents,
-    };
-  }
-
-  /* Search */
-  public async search(options: PaginationOptions): Promise<UsersInterface> {
-    const queryBuilder = this.serviceUsers.createQueryBuilder('talents');
-
-    queryBuilder
-      .orderBy('talents.userEntityId', 'ASC')
-  
-    queryBuilder.where('talents.userCurrentRole IN (:...roles)', { roles: [1, 8] });
-
-    // Seperate Query to Count the Totals
-    const countQueryBuilder = this.serviceUsers.createQueryBuilder('talents');
-    countQueryBuilder.where('talents.userCurrentRole IN (:...roles)', { roles: [1, 8] });
-    const totalCount = await countQueryBuilder.getCount();
-
-    const talents = await queryBuilder.getMany();
-
-    return {
-      totalCount,
-      page: options.page,
-      data: talents,
-    };
-  }
-
-  // Get One Talent According to ID
-  public async findOneTalent(id: number) {
-    const queryBuilder = this.serviceUsers.createQueryBuilder('talents')
-      .where('talents.userEntityId = :id', { id })
-      .leftJoinAndSelect('talents.batchTraineeEvaluations', 'batchTraineeEvaluations')
-      .leftJoinAndSelect('talents.batchTrainees', 'batchTrainees');
-  
-    const talent = await queryBuilder.getOne();
-    return talent;
-  }
-
-  // Find One Talent/Employee
+  // Find One Employee
   public async findOneEmployee(id: number) {
     const employee = await this.serviceEmp.findOne({
       relations: [
@@ -97,6 +32,46 @@ export class TalentService {
       where: { empEntityId: id },
     });
     return employee;
+  }
+
+  // Get All Employee
+  public async findAll(options: PaginationOptions): Promise<EmployeeInterface> {
+    const queryBuilder = this.serviceEmp.createQueryBuilder('employee');
+
+    queryBuilder
+      .leftJoinAndSelect('employee.empEntity', 'empEntity')
+      .leftJoinAndSelect('employee.employeeClientContracts', 'ecc')
+      .leftJoinAndSelect('ecc.eccoStatus', 'eccoStatus')
+      .leftJoinAndSelect('employee.employeeDepartmentHistories', 'edh')
+      .leftJoinAndSelect('edh.edhiDept', 'edhiDept')
+      .leftJoinAndSelect('employee.employeePayHistories', 'eph');
+
+    const countQueryBuilder = this.serviceEmp.createQueryBuilder('employee');
+    const totalCount = await countQueryBuilder.getCount();
+
+    const employee = await queryBuilder.getMany();
+
+    return {
+      totalCount,
+      page: options.page,
+      data: employee,
+    };
+  }
+
+  public async findEmployeePayHistory(id: number) {
+    const employeepayhistory = await this.serviceEmpPayHistory.findOne({
+      where: { ephiEntityId: id },
+    });
+    return employeepayhistory;
+  }
+
+  public async findDepartmentHistory(id: number) {
+    const depthistory = await this.serviceEmpDeptHistory.findOne({
+      where: { edhiId: id },
+      relations: ['edhiDept'],
+    });
+
+    return depthistory;
   }
 
   public async Insert(fields: any) {

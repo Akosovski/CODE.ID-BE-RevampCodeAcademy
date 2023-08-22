@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TalentModule } from './talent/talent.module';
+import { EmployeeModule } from './employee/employee.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { TalentModule } from './talent/talent.module';
       autoLoadEntities: true,
     }),
     TalentModule,
+    EmployeeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

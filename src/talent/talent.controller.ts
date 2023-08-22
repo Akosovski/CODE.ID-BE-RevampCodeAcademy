@@ -11,7 +11,6 @@ import {
   Query,
 } from '@nestjs/common';
 import { TalentService } from './talent.service';
-import { PaginationOptions } from './dto/pagination.dto';
 
 @Controller('talent')
 export class TalentController {
@@ -21,11 +20,9 @@ export class TalentController {
   @Get('paging')
   public async getAll(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(4), ParseIntPipe) limit: number,
   ) {
     return this.TalentService.getAll({
       page: page,
-      limit: limit,
       name: '',
       status: '',
     });
@@ -34,45 +31,19 @@ export class TalentController {
   @Get('search')
   public async search(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(4), ParseIntPipe) limit: number,
   ) {
     console.log("Page :", page);
-    return this.TalentService.getAll({
+    return this.TalentService.search({
       page: page,
-      limit: limit,
       name: 'S',
       status: 'S',
     });
   }
 
-  @Get('salaryhistory/:id')
-  public async getEmployeePayHistory(@Param('id') id: number) {
-    return this.TalentService.findEmployeePayHistory(id);
-  }
-
-  @Get('depthistory/:id')
-  public async getDepartmentHistory(@Param('id') id: number) {
-    return this.TalentService.findDepartmentHistory(id);
-  }
-
-  // Get One Employee
+  // Get One Talent
   @Get('details/:id')
   public async getOneEmployee(@Param('id') id: number) {
-    return this.TalentService.findOne(id);
-  }
-  
-  // Get All Employees
-  @Get('employees')
-  public async getAllLimit(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(4), ParseIntPipe) limit: number,
-  ) {
-    return this.TalentService.findAllLimit({
-      page: page,
-      limit: limit,
-      name: '',
-      status: '',
-    });
+    return this.TalentService.findOneTalent(id);
   }
 
   @Post('create')
