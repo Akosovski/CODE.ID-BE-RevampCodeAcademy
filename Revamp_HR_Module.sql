@@ -133,6 +133,10 @@ UPDATE users.users
 SET user_first_name = 'Andhika', user_last_name = 'Pratama'
 WHERE user_entity_id = '9';
 
+UPDATE users.users
+SET user_first_name = 'Yugo', user_last_name = 'Ardan'
+WHERE user_entity_id = '8';
+
 INSERT INTO users.business_entity (entity_id) VALUES
 (10),
 (11),
@@ -180,10 +184,13 @@ VALUES
 (7, 'passed', '0', NULL, NULL, '0', 'selama bootcamp vyke ok good', 80, '2023-07-06', 14, 3),
 (8, 'passed', '0', NULL, NULL, '0', 'selama bootcamp andhika ok good', 80, '2023-07-06', 9, 2);
 
+INSERT INTO users.roles (role_id, role_name, role_type)
+VALUES
+(13, 'Employee Trial', 'External');
+
 */
 
 select * from users.users;
-
 
 
 

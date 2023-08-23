@@ -1,26 +1,14 @@
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Employee } from 'output/entities/Employee';
 import { Users } from 'output/entities/Users';
-import { EmployeeDepartmentHistory } from 'output/entities/EmployeeDepartmentHistory';
-import { EmployeePayHistory } from 'output/entities/EmployeePayHistory';
-import { Batch } from 'output/entities/Batch';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { PaginationOptions } from './dto/pagination.dto';
-import { EmployeeInterface, UsersInterface } from './talent.interface';
+import { UsersInterface } from './talent.interface';
 
 @Injectable()
 export class TalentService {
   constructor(
-    @InjectRepository(Employee)
-    private serviceEmp: Repository<Employee>,
-    @InjectRepository(EmployeePayHistory)
-    private serviceEmpPayHistory: Repository<EmployeePayHistory>,
-    @InjectRepository(EmployeeDepartmentHistory)
-    private serviceEmpDeptHistory: Repository<EmployeeDepartmentHistory>,
-    @InjectRepository(Batch)
-    private serviceBatch: Repository<Batch>,
     @InjectRepository(Users)
     private serviceUsers: Repository<Users>,
   ) {}
@@ -35,13 +23,13 @@ export class TalentService {
       .addSelect(['batrBatch.batchName']) // Get Batch Name
       .leftJoin('batrBatch.batchEntity', 'batchEntity') // Join to Program Entity
       .addSelect(['batchEntity.progTitle']) // Get Program Title
-      .orderBy('talents.userEntityId', 'ASC')
+      .orderBy('talents.userCurrentRole', 'DESC')
   
-    queryBuilder.where('talents.userCurrentRole IN (:...roles)', { roles: [2, 12] });
+    queryBuilder.where('talents.userCurrentRole IN (:...roles)', { roles: [1, 2, 12, 13] });
 
     // Seperate Query to Count the Totals
     const countQueryBuilder = this.serviceUsers.createQueryBuilder('talents');
-    countQueryBuilder.where('talents.userCurrentRole IN (:...roles)', { roles: [2, 12] });
+    countQueryBuilder.where('talents.userCurrentRole IN (:...roles)', { roles: [1, 2, 12, 13] });
     const totalCount = await countQueryBuilder.getCount();
 
     const talents = await queryBuilder.getMany();
@@ -53,31 +41,48 @@ export class TalentService {
     };
   }
 
-  /* Search */
+  // Search Talents
   public async search(options: PaginationOptions): Promise<UsersInterface> {
     const queryBuilder = this.serviceUsers.createQueryBuilder('talents');
+    const countQueryBuilder = this.serviceUsers.createQueryBuilder('talents');
 
     queryBuilder
-    .leftJoinAndSelect('talents.batchTrainees', 'batchTrainees') // Join to Batch Trainees
-    .leftJoinAndSelect('batchTrainees.batrBatch', 'batrBatch') // Join to Batch
-    .addSelect(['batrBatch.batchName']) // Get Batch Name
-    .leftJoin('batrBatch.batchEntity', 'batchEntity') // Join to Program Entity
-    .addSelect(['batchEntity.progTitle']) // Get Program Title
-    .orderBy('talents.userEntityId', 'ASC')
-  
-    queryBuilder.where('talents.userCurrentRole IN (:...roles)', { roles: [2, 12] });
+        .leftJoinAndSelect('talents.batchTrainees', 'batchTrainees') // Join to Batch Trainees
+        .leftJoinAndSelect('batchTrainees.batrBatch', 'batrBatch') // Join to Batch
+        .addSelect(['batrBatch.batchName']) // Get Batch Name
+        .leftJoin('batrBatch.batchEntity', 'batchEntity') // Join to Program Entity
+        .addSelect(['batchEntity.progTitle']) // Get Program Title
+        .orderBy('talents.userCurrentRole', 'DESC');
+    
+    // Search Conditions
+    if (options.name && options.status) {
+      queryBuilder.andWhere('talents.userFirstName LIKE :userFirstName', { userFirstName: `%${options.name}%` });
+      queryBuilder.andWhere('talents.userCurrentRole = :userCurrentRole', { userCurrentRole: options.status });
 
-    // Seperate Query to Count the Totals
-    const countQueryBuilder = this.serviceUsers.createQueryBuilder('talents');
-    countQueryBuilder.where('talents.userCurrentRole IN (:...roles)', { roles: [2, 12] });
+      countQueryBuilder.andWhere('talents.userFirstName LIKE :userFirstName', { userFirstName: `%${options.name}%` });
+      countQueryBuilder.andWhere('talents.userCurrentRole = :userCurrentRole', { userCurrentRole: options.status });
+    }
+
+    if (options.status && !options.name) {
+      queryBuilder.andWhere('talents.userCurrentRole = :userCurrentRole', { userCurrentRole: options.status });
+      countQueryBuilder.andWhere('talents.userCurrentRole = :userCurrentRole', { userCurrentRole: options.status });
+    }
+
+    if (!options.status && options.name) {
+      queryBuilder.andWhere('talents.userFirstName LIKE :userFirstName', { userFirstName: `%${options.name}%` });
+      countQueryBuilder.andWhere('talents.userFirstName LIKE :userFirstName', { userFirstName: `%${options.name}%` });
+    }
+
+    queryBuilder.andWhere('talents.userCurrentRole IN (:...roles)', { roles: [1, 2, 12, 13] });
+    countQueryBuilder.andWhere('talents.userCurrentRole IN (:...roles)', { roles: [1, 2, 12, 13] });
+
     const totalCount = await countQueryBuilder.getCount();
-
     const talents = await queryBuilder.getMany();
 
     return {
-      totalCount,
-      page: options.page,
-      data: talents,
+        totalCount,
+        page: options.page,
+        data: talents,
     };
   }
 
@@ -97,52 +102,21 @@ export class TalentService {
     return talent;
   }
 
-  public async Insert(fields: any) {
+  // Update Talent Role (Status)
+  public async updateTalentRole(id: number, newRole: number, editedDate: Date) {
     try {
-      //Insert into hr.Employee Table
-      const employee = await this.serviceEmp.save({
-        empEntityId: fields.empEntityId,
-        empEmpNumber: fields.empEmpNumber,
-        empNationalId: fields.empNationalId,
-        empBirthDate: fields.empBirthDate,
-        empMaritalStatus: fields.empMaritalStatus,
-        empGender: fields.empGender,
-        empHireDate: fields.empHireDate,
-        empSalariedFlag: fields.empSalariedFlag,
-        empVacationHours: fields.empVacationHours,
-        empSickleaveHours: fields.empSickleaveHours,
-        empCurrentFlag: fields.empCurrentFlag,
-        empModifiedDate: new Date(),
-        empType: fields.empType,
-        empJoroId: fields.empJoroId,
-        empEmpEntityId: fields.empEmpEntityId,
-      });
-
-      //Insert into hr.EmployeePayHistory Table
-      await this.serviceEmpPayHistory.save({
-        ephiEntityId: employee.empEntityId,
-        ephiRateSalary: fields.ephiRateSalary,
-        ephiPayFrequence: fields.ephiPayFrequence,
-        ephiModifiedDate: new Date(),
-      });
-
-      //Insert into hr.EmployeeDepartmentHistory Table
-      await this.serviceEmpDeptHistory.save({
-        edhiId: employee.empEntityId,
-        edhiStartDate: fields.edhiStartDate,
-        edhiEndDate: fields.edhiEndDate,
-        edhiModifiedDate: new Date(),
-        edhiDeptId: fields.edhiDeptId,
-      });
-
-      const result = await this.serviceEmp.findOne({
-        where: { empEntityId: employee.empEmpEntityId },
-        relations: ['employeeDepartmentHistories', 'employeePayHistories'],
-      });
-
-      return result;
+      await this.serviceUsers
+        .createQueryBuilder()
+        .update(Users)
+        .set({ userCurrentRole: newRole, userModifiedDate: editedDate })
+        .where('userEntityId = :id', { id })
+        .execute();
+  
+      const updatedTalent = await this.findOneTalent(id);
+      return updatedTalent;
     } catch (error) {
-      return error.message;
+      throw new Error(`Failed to update talent: ${error.message}`);
     }
   }
+  
 }

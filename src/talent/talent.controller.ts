@@ -8,9 +8,12 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
+import { Users } from 'output/entities/Users';
 import { TalentService } from './talent.service';
+import { PaginationOptions } from './dto/pagination.dto';
 
 @Controller('talent')
 export class TalentController {
@@ -24,20 +27,19 @@ export class TalentController {
     return this.TalentService.getAll({
       page: page,
       name: '',
-      status: '',
+      status: 0,
     });
   }
 
+  // Search Talents by Name and Status
   @Get('search')
-  public async search(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-  ) {
-    console.log("Page :", page);
-    return this.TalentService.search({
-      page: page,
-      name: 'S',
-      status: 'S',
-    });
+  async searchTalents(@Query() options: PaginationOptions) {
+    try {
+        const talents = await this.TalentService.search(options);
+        return { message: 'Talents found successfully', data: talents };
+    } catch (error) {
+        return { message: 'Failed to search talents', error: error.message };
+    }
   }
 
   // Get One Talent
@@ -52,8 +54,21 @@ export class TalentController {
     return this.TalentService.findOneTalent(id);
   }
 
-  @Post('create')
-  public async create(@Body() fields: any) {
-    return this.TalentService.Insert(fields);
+  // Used to Update the Status 
+  @Put('status/:id')
+  async updateTalent(@Param('id') id: number, @Body() requestBody: { newRole: number; newModifiedDate: Date }) {
+    try {
+      const updatedTalent = await this.TalentService.updateTalentRole(
+        id,
+        requestBody.newRole,
+        requestBody.newModifiedDate
+      );
+      return { message: 'Talent updated successfully', talent: updatedTalent };
+    } catch (error) {
+      return { message: 'Failed to update talent', error: error.message };
+    }
   }
+
+  // Used to Create Client Contract
+
 }

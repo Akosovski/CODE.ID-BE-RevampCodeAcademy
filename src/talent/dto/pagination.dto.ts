@@ -3,5 +3,5 @@
 export class PaginationOptions {
   page: number;
   name: string;
-  status: string;
+  status: number;
 }
