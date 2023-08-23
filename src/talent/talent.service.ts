@@ -58,13 +58,18 @@ export class TalentService {
     const queryBuilder = this.serviceUsers.createQueryBuilder('talents');
 
     queryBuilder
-      .orderBy('talents.userEntityId', 'ASC')
+    .leftJoinAndSelect('talents.batchTrainees', 'batchTrainees') // Join to Batch Trainees
+    .leftJoinAndSelect('batchTrainees.batrBatch', 'batrBatch') // Join to Batch
+    .addSelect(['batrBatch.batchName']) // Get Batch Name
+    .leftJoin('batrBatch.batchEntity', 'batchEntity') // Join to Program Entity
+    .addSelect(['batchEntity.progTitle']) // Get Program Title
+    .orderBy('talents.userEntityId', 'ASC')
   
-    queryBuilder.where('talents.userCurrentRole IN (:...roles)', { roles: [1, 8] });
+    queryBuilder.where('talents.userCurrentRole IN (:...roles)', { roles: [2, 12] });
 
     // Seperate Query to Count the Totals
     const countQueryBuilder = this.serviceUsers.createQueryBuilder('talents');
-    countQueryBuilder.where('talents.userCurrentRole IN (:...roles)', { roles: [1, 8] });
+    countQueryBuilder.where('talents.userCurrentRole IN (:...roles)', { roles: [2, 12] });
     const totalCount = await countQueryBuilder.getCount();
 
     const talents = await queryBuilder.getMany();
@@ -80,23 +85,16 @@ export class TalentService {
   public async findOneTalent(id: number) {
     const queryBuilder = this.serviceUsers.createQueryBuilder('talents')
       .where('talents.userEntityId = :id', { id })
-      .leftJoinAndSelect('talents.batchTraineeEvaluations', 'batchTraineeEvaluations')
-      .leftJoinAndSelect('talents.batchTrainees', 'batchTrainees');
+      .leftJoinAndSelect('talents.usersEmails', 'usersEmails')
+      .leftJoinAndSelect('talents.usersPhones', 'usersPhones')
+      .leftJoinAndSelect('talents.batchTrainees', 'batchTrainees') // Join to Batch Trainees
+      .leftJoinAndSelect('batchTrainees.batrBatch', 'batrBatch') // Join to Batch
+      .leftJoin('batrBatch.batchEntity', 'batchEntity') // Join to Program Entity
+      .addSelect(['batchEntity.progTitle']) // Get Program Title
+      .orderBy('talents.userEntityId', 'ASC')
   
     const talent = await queryBuilder.getOne();
     return talent;
-  }
-
-  // Find One Talent/Employee
-  public async findOneEmployee(id: number) {
-    const employee = await this.serviceEmp.findOne({
-      relations: [
-        'empEntity',
-        'batches',
-      ],
-      where: { empEntityId: id },
-    });
-    return employee;
   }
 
   public async Insert(fields: any) {

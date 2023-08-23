@@ -42,7 +42,13 @@ export class TalentController {
 
   // Get One Talent
   @Get('details/:id')
-  public async getOneEmployee(@Param('id') id: number) {
+  public async getOneTalent(@Param('id') id: number) {
+    return this.TalentService.findOneTalent(id);
+  }
+
+  // Get One Talent for Placement
+  @Get('placement/:id')
+  public async getOneTalentPlacement(@Param('id') id: number) {
     return this.TalentService.findOneTalent(id);
   }
 
