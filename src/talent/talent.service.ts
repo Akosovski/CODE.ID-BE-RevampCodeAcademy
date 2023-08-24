@@ -103,7 +103,7 @@ export class TalentService {
   }
 
   // Update Talent Role (Status)
-  public async updateTalentRole(id: number, newRole: number, editedDate: Date) {
+  public async updateTalentRole(id: number, newRole: number, editedDate: string) {
     try {
       await this.serviceUsers
         .createQueryBuilder()

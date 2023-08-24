@@ -56,7 +56,7 @@ export class TalentController {
 
   // Used to Update the Status 
   @Put('status/:id')
-  async updateTalent(@Param('id') id: number, @Body() requestBody: { newRole: number; newModifiedDate: Date }) {
+  async updateTalent(@Param('id') id: number, @Body() requestBody: { newRole: number; newModifiedDate: string }) {
     try {
       const updatedTalent = await this.TalentService.updateTalentRole(
         id,
