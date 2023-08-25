@@ -11,11 +11,11 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { Users } from 'output/entities/Users';
+import { ContractDetailsDto } from './dto/contractDetails.dto';
 import { TalentService } from './talent.service';
 import { PaginationOptions } from './dto/pagination.dto';
 
-@Controller('talent')
+@Controller('hr/talent')
 export class TalentController {
   constructor(private TalentService: TalentService) {}
 
@@ -43,7 +43,7 @@ export class TalentController {
   }
 
   // Get One Talent
-  @Get('details/:id')
+  @Get('view/:id')
   public async getOneTalent(@Param('id') id: number) {
     return this.TalentService.findOneTalent(id);
   }
@@ -55,7 +55,7 @@ export class TalentController {
   }
 
   // Used to Update the Status 
-  @Put('status/:id')
+  @Put('switchStatus/:id')
   async updateTalent(@Param('id') id: number, @Body() requestBody: { newRole: number; newModifiedDate: string }) {
     try {
       const updatedTalent = await this.TalentService.updateTalentRole(
@@ -70,5 +70,17 @@ export class TalentController {
   }
 
   // Used to Create Client Contract
-
+  @Post('create/:id')
+  async createEmployeeClientContract(
+    @Param('id') id: number,
+    @Body() ContractDetailsDto: ContractDetailsDto,
+  ) {
+    try {
+      await this.TalentService.updateTalentRole(id, 13, ContractDetailsDto.startDate);
+      const savedContract = await this.TalentService.createEmployeeClientContract(id, ContractDetailsDto);
+      return { message: 'Employee Client Contract created successfully', contract: savedContract };
+    } catch (error) {
+      return { message: 'Failed to create Employee Client Contract', error: error.message };
+    }
+  }
 }

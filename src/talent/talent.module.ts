@@ -5,12 +5,11 @@ import { TalentService } from './talent.service';
 import { Employee } from 'output/entities/Employee';
 import { Users } from 'output/entities/Users';
 import { EmployeePayHistory } from 'output/entities/EmployeePayHistory';
-import { EmployeeDepartmentHistory } from 'output/entities/EmployeeDepartmentHistory';
-import { Batch } from 'output/entities/Batch';
+import { EmployeeClientContract } from 'output/entities/EmployeeClientContract';
 
 @Module({
   // eslint-disable-next-line prettier/prettier
-  imports: [TypeOrmModule.forFeature([Employee, EmployeePayHistory, EmployeeDepartmentHistory, Users, Batch])],
+  imports: [TypeOrmModule.forFeature([Employee, EmployeePayHistory, EmployeeClientContract, Users])],
   controllers: [TalentController],
   providers: [TalentService],
 })

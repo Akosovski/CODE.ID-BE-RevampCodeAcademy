@@ -144,6 +144,15 @@ INSERT INTO users.business_entity (entity_id) VALUES
 (13),
 (14);
 
+INSERT INTO hr.employee (emp_entity_id, emp_emp_number, emp_national_id, emp_birth_date, emp_marital_status, emp_gender, emp_hire_date, emp_salaried_flag, emp_vacation_hours, emp_sickleave_hours, emp_current_flag, emp_type, emp_joro_id)
+VALUES
+(9, 202308001, 13419465645004, '1995-03-12', 'M', 'M','2020-01-10', '1', 12, 12, 1, 'Internal', 1),
+(10, 202308002, 13420021009564, '2022-02-25', 'S', 'F','2020-01-11', '1', 12, 12, 1, 'Outsource', 1),
+(11, 202308003, 13432323213005, '2022-02-25', 'S', 'M','2020-01-12', '1', 12, 12, 1, 'Outsource', 1),
+(12, 202308004, 13416765567006, '2022-02-25', 'S', 'M','2020-01-13', '1', 12, 12, 1, 'Outsource', 1),
+(13, 202308005, 13414564363226, '2022-02-25', 'M', 'M','2020-01-13', '1', 12, 12, 1, 'Outsource', 1),
+(14, 202308006, 13419434556316, '2022-02-25', 'S', 'M','2020-01-13', '1', 12, 12, 1, 'Outsource', 1);
+
 INSERT INTO users.users (user_entity_id, user_name, user_password, user_first_name, user_last_name, user_email_promotion, user_demographic, user_photo, user_current_role)
 VALUES
 (10, 'latenna', 'gfdgfsdgfagfdg', 'Latenna', 'Albinauric', 1, '{"latitude":12.90,"longitude":-99.989}', 'latenna.png', 2),
@@ -190,7 +199,7 @@ VALUES
 
 */
 
-select * from users.users;
+select * from hr.employee;
 
 
 

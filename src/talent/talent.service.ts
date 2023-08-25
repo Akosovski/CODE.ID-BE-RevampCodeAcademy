@@ -2,6 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Users } from 'output/entities/Users';
+import { EmployeeClientContract } from 'output/entities/EmployeeClientContract';
 import { Repository } from 'typeorm';
 import { PaginationOptions } from './dto/pagination.dto';
 import { UsersInterface } from './talent.interface';
@@ -11,6 +12,8 @@ export class TalentService {
   constructor(
     @InjectRepository(Users)
     private serviceUsers: Repository<Users>,
+    @InjectRepository(EmployeeClientContract)
+    private serviceECC: Repository<EmployeeClientContract>,
   ) {}
 
   // Get All Talents
@@ -119,4 +122,22 @@ export class TalentService {
     }
   }
   
+  // Create Client Contract
+  public async createEmployeeClientContract(id: number, ContractDetailsDto: any) {
+    
+    const newContract = this.serviceECC.create({
+      eccoEntityId: id,
+      eccoClit: ContractDetailsDto.contractClient,
+      eccoContractNo: ContractDetailsDto.contractNo,
+      eccoContractDate: ContractDetailsDto.startDate,
+      eccoStartDate: ContractDetailsDto.startDate,
+      eccoEndDate: ContractDetailsDto.endDate,
+      eccoNotes: ContractDetailsDto.notes,
+    });
+
+    const savedContract = await this.serviceECC.save(newContract);
+  
+    return savedContract;
+  }
+
 }
