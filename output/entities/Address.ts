@@ -68,6 +68,6 @@ export class Address {
   @OneToMany(() => JobPost, (jobPost) => jobPost.jopoAddr)
   jobPosts: JobPost[];
 
-  @OneToOne(() => UsersAddress, (usersAddress) => usersAddress.etadAddr)
+  @OneToOne(() => UsersAddress, (usersAddress) => usersAddress.etadAddrId)
   usersAddress: UsersAddress;
 }

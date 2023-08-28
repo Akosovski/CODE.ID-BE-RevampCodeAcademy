@@ -45,7 +45,7 @@ export class City {
 
   @OneToMany(
     () => UsersExperiences,
-    (usersExperiences) => usersExperiences.usexCity
+    (usersExperiences) => usersExperiences.usexCityId
   )
   usersExperiences: UsersExperiences[];
 }

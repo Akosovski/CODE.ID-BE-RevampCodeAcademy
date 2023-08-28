@@ -28,6 +28,6 @@ export class AddressType {
   })
   adtyModifiedDate: Date | null;
 
-  @OneToMany(() => UsersAddress, (usersAddress) => usersAddress.etadAdty)
+  @OneToMany(() => UsersAddress, (usersAddress) => usersAddress.etadAdtyId)
   usersAddresses: UsersAddress[];
 }
