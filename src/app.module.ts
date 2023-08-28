@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TalentModule } from './talent/talent.module';
 import { EmployeeModule } from './employee/employee.module';
+import { GlobalModule } from './globals/global.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { EmployeeModule } from './employee/employee.module';
       entities: ['dist/output/entities/*.js'],
       autoLoadEntities: true,
     }),
+    GlobalModule,
     TalentModule,
     EmployeeModule,
   ],

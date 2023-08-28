@@ -16,6 +16,7 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { City } from 'output/entities/City';
 import { UsersExperiences } from 'output/entities/UsersExperiences';
+import { PhoneNumberType } from 'output/entities/PhoneNumberType';
 import { UsersSkill } from 'output/entities/UsersSkill';
 import { SkillType } from 'output/entities/SkillType';
 
@@ -24,13 +25,16 @@ const salt = 10;
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(Users) private userRepo: Repository<Users>,
+    @InjectRepository(Users)
+    private userRepo: Repository<Users>,
     @InjectRepository(BusinessEntity)
     private businessEntityRepository: Repository<BusinessEntity>,
     @InjectRepository(UsersEmail)
     private UsersEmailRepository: Repository<UsersEmail>,
     @InjectRepository(UsersPhones)
     private UsersPhonesRepository: Repository<UsersPhones>,
+    @InjectRepository(PhoneNumberType)
+    private PhoneNumberTypeRepository: Repository<PhoneNumberType>,
     @InjectRepository(UsersRoles)
     private UsersRolesRepository: Repository<UsersRoles>,
     @InjectRepository(Roles)
@@ -65,13 +69,55 @@ export class UsersService {
     });
   }
 
-  //fungsi melihat satu data tabel users bedasarkan id
-  public async findOne(id: number) {
-    return await this.userRepo.findOne({
+  // Tambahan untuk get semua roleName user = employee
+  public async findAllEmployee() {
+    return await this.userRepo.find({
+      relations: {
+        usersRoles: true,
+      },
       where: {
-        userEntityId: id,
+        usersRoles: {
+          usroRole: {
+            roleName: 'Employee', // Ganti dengan nama peran "employee" yang sesuai di entitas Roles
+          },
+        },
       },
     });
+  }
+
+  // fungsi melihat satu data tabel users bedasarkan id
+  // public async findOne(id: number) {
+  //   return await this.userRepo.findOne({
+  //     relations: {
+  //       usersEmails: true,
+  //       usersPhones: true,
+  //     },
+  //     where: {
+  //       userEntityId: id,
+  //       usersEmails: {
+  //         pmailEntity: {
+  //           userEntityId: id,
+  //         },
+  //       },
+  //       usersPhones: {
+  //         uspoEntity: {
+  //           userEntityId: id,
+  //         },
+  //       },
+  //     },
+  //   });
+  // }
+
+  public async findOne(id: number) {
+    return await this.userRepo
+      .createQueryBuilder('user')
+      .where('user.userEntityId = :id', { id })
+      .leftJoinAndSelect('user.usersEmails', 'usersEmail')
+      .leftJoinAndSelect('user.usersPhones', 'usersPhone')
+      .leftJoinAndSelect('user.usersEducations', 'usersEducation')
+      .leftJoinAndSelect('usersPhone.uspoPontyCode', 'uspoPontyCode') //penambahan join uspocode untuk mengambilcode nya
+      .leftJoinAndSelect('user.usersAddresses', 'usersAddress') //penambaha join address untuk ambil id addres tapi ini belum bisa ke get address yang di table master nya
+      .getOne();
   }
 
   //fungsi signup users menjadi candidate atau talent berdasarkan apply yang dipilih
@@ -84,7 +130,7 @@ export class UsersService {
       );
       const entity_id = savedBusinessEntity.entityId;
       const hashPassword = await bcrypt.hash(fields.password, salt);
-      const confirmPassword = fields.confirmpass;
+      const confirmPassword = fields.confirmPassword;
 
       if (fields.password !== confirmPassword) {
         await this.businessEntityRepository.delete(entity_id);
@@ -92,8 +138,8 @@ export class UsersService {
       }
 
       let role;
-
-      if (fields.apply === 'Bootcamp') {
+      // penyesuain untuk form FE (value harus integer)
+      if (fields.apply === 1) {
         role = await this.RolesRepository.findOne({
           where: { roleName: 'Candidat' },
         });
@@ -101,8 +147,8 @@ export class UsersService {
           await this.businessEntityRepository.delete(entity_id);
           throw new Error('Candidate role not found.');
         }
-      } else if (fields.apply === 'Jobs') {
-        await this.businessEntityRepository.delete(entity_id);
+        // penyesuain untuk form FE (value harus integer)
+      } else if (fields.apply === 2) {
         role = await this.RolesRepository.findOne({
           where: { roleName: 'Talent' },
         });
@@ -115,11 +161,26 @@ export class UsersService {
         throw new Error('Invalid role.');
       }
 
-      const roleId = role.roleId;
+      // penyesuain untuk form FE
+      let userPontyCode;
+      if (fields.uspoPontyCode === 'Cell') {
+        userPontyCode = await this.PhoneNumberTypeRepository.findOne({
+          where: { pontyCode: 'Cell' },
+        });
+      } else if (fields.uspoPontyCode === 'Home') {
+        userPontyCode = await this.PhoneNumberTypeRepository.findOne({
+          where: { pontyCode: 'Home' },
+        });
+      } else {
+        throw new Error('Invalid Type Phone Number');
+      }
 
+      const roleId = role.roleId;
       const user = await this.userRepo.save({
         userEntityId: entity_id,
-        userName: fields.user_name, // ganti dari name jadi user_name
+        userFirstName: fields.userFirstName, // penyesuain untuk form FE
+        userLastName: fields.userLastName, // penyesuain untuk form FE
+        userName: fields.userName, // penyesuain untuk form FE
         userPassword: hashPassword,
         userCurrentRole: roleId,
         userModifiedDate: new Date(),
@@ -127,14 +188,15 @@ export class UsersService {
 
       const userEmail = await this.UsersEmailRepository.save({
         pmailEntityId: entity_id,
-        pmailAddress: fields.email,
+        pmailAddress: fields.pmailAddress,
         pmailModifiedDate: new Date(),
       });
 
       const userPhone = await this.UsersPhonesRepository.save({
         uspoEntityId: entity_id,
-        uspoNumber: fields.phone,
+        uspoNumber: fields.uspoNumber,
         uspoModifiedDate: new Date(),
+        uspoPontyCode: userPontyCode, // penyesuain untuk form FE
       });
 
       const userRole = await this.UsersRolesRepository.save({
@@ -142,8 +204,7 @@ export class UsersService {
         usroRoleId: roleId,
         usroModifiedDate: new Date(),
       });
-
-      return { user, userEmail, userPhone, userRole };
+      return { user };
     } catch (error) {
       if (businessEntity) {
         await this.businessEntityRepository.delete({
@@ -154,6 +215,7 @@ export class UsersService {
     }
   }
 
+  // SIGNUP EMPLOYEE
   public async signupasemployee(fields: any) {
     let businessEntity: BusinessEntity;
     try {
@@ -162,27 +224,51 @@ export class UsersService {
         businessEntity,
       );
       const entity_id = savedBusinessEntity.entityId;
-
-      const role = await this.RolesRepository.findOne({
-        where: { roleId: 12 },
-      });
-
-      if (!role) {
+      let role;
+      // penyesuain untuk form FE (value harus integer)
+      if (fields.apply && fields.apply === 12) {
+        role = await this.RolesRepository.findOne({
+          where: { roleName: 'Employee' },
+        });
+      } else if (!role) {
         await this.businessEntityRepository.delete(entity_id);
-        throw new Error('Role not found.');
+        throw new Error('Employee role not found.');
+      } else {
+        await this.businessEntityRepository.delete(entity_id);
+        throw new Error('Invalid role.');
+      }
+      // const role = await this.RolesRepository.findOne({
+      //   where: { roleId: 12 },
+      // });
+      // if (!role) {
+      //   await this.businessEntityRepository.delete(entity_id);
+      //   throw new Error('Role not found.');
+      // }
+
+      // penyesuain untuk form FE
+      let userPontyCode;
+      if (fields.uspoPontyCode === 'Cell') {
+        userPontyCode = await this.PhoneNumberTypeRepository.findOne({
+          where: { pontyCode: 'Cell' },
+        });
+      } else if (fields.uspoPontyCode === 'Home') {
+        userPontyCode = await this.PhoneNumberTypeRepository.findOne({
+          where: { pontyCode: 'Home' },
+        });
+      } else {
+        throw new Error('Invalid Type Phone Number');
       }
 
       const roleId = role.roleId;
-
       const hashPassword = await bcrypt.hash(fields.password, salt);
-      const confirmPassword = fields.confirmpass;
+      const confirmPassword = fields.confirmPassword;
 
       if (fields.password !== confirmPassword) {
         await this.businessEntityRepository.delete(entity_id);
         throw new Error('Password and confirm password do not match.');
       }
 
-      if (!fields.email || !fields.email.includes('@code.id')) {
+      if (!fields.pmailAddress || !fields.pmailAddress.includes('@code.id')) {
         await this.businessEntityRepository.delete({
           entityId: businessEntity.entityId,
         });
@@ -192,22 +278,33 @@ export class UsersService {
 
       const user = await this.userRepo.save({
         userEntityId: entity_id,
-        userName: fields.user_name, // ganti name jadi user_name
+        userFirstName: fields.userFirstName, // penyesuain untuk form FE
+        userLastName: fields.userLastName, // penyesuain untuk form FE
+        userName: fields.userName, // penyesuain untuk form FE
         userPassword: hashPassword,
         userCurrentRole: roleId,
         userModifiedDate: new Date(),
       });
 
+      // const user = await this.userRepo.save({
+      //   userEntityId: entity_id,
+      //   userName: fields.name,
+      //   userPassword: hashPassword,
+      //   userCurrentRole: roleId,
+      //   userModifiedDate: new Date(),
+      // });
+
       const userEmail = await this.UsersEmailRepository.save({
         pmailEntityId: entity_id,
-        pmailAddress: fields.email,
+        pmailAddress: fields.pmailAddress,
         pmailModifiedDate: new Date(),
       });
 
       const userPhone = await this.UsersPhonesRepository.save({
         uspoEntityId: entity_id,
-        uspoNumber: fields.phone,
+        uspoNumber: fields.uspoNumber,
         uspoModifiedDate: new Date(),
+        uspoPontyCode: userPontyCode, // penyesuain untuk form FE
       });
 
       const userRole = await this.UsersRolesRepository.save({
@@ -238,7 +335,7 @@ export class UsersService {
       }
 
       const user = await this.userRepo.update(id, {
-        userName: fields.user_name,
+        userName: fields.name,
         userFirstName: fields.firstname,
         userLastName: fields.lastname,
         userBirthDate: birthdate,
@@ -314,7 +411,7 @@ export class UsersService {
   public async editprofile(file, id: number, fields: any) {
     try {
       const user = await this.userRepo.update(id, {
-        userName: fields.user_name,
+        userName: fields.name,
         userFirstName: fields.firstname,
         userLastName: fields.lastname,
         userPhoto: file.filename,
@@ -417,7 +514,7 @@ export class UsersService {
       const userphone = await this.UsersPhonesRepository.save({
         uspoEntityId: id,
         uspoNumber: fields.phone,
-        uspoPontyCode: fields.type,
+        uspoPontyCode: fields.PontyCode,
         uspoModifiedDate: new Date(),
       });
       return { userphone };
@@ -443,7 +540,7 @@ export class UsersService {
         { uspoNumber: usponumber },
         {
           uspoNumber: fields.phone,
-          uspoPontyCode: fields.type,
+          uspoPontyCode: fields.PontyCode,
           uspoModifiedDate: new Date(),
         },
       );
@@ -464,7 +561,7 @@ export class UsersService {
   //fungsi add address
   public async addaddress(id: number, fields: any, search_city: string) {
     try {
-      const city = await this.CityRepository.createQueryBuilder('city')
+      const city = await this.CityRepository.createQueryBuilder('city') //penambahan search untuk FE
         .where('city_name ILIKE :search_city', {
           search_city: `%${search_city}%`,
         })
@@ -533,7 +630,7 @@ export class UsersService {
     }
   }
 
-  // fungsi edit address
+  // fungsi edit address //penambahan search untuk FE
   public async editaddress(addrid: number, fields: any, search_city: string) {
     try {
       const address = await this.AddressRepository.findOne({
@@ -595,12 +692,12 @@ export class UsersService {
       const useraddressadty = await this.UsersAddressRepository.update(
         { etadAddrId: addrid },
         {
-          // etadAdtyId: adtyId,
+          etadAdtyId: adtyId,
           etadModifiedDate: new Date(),
         },
       );
 
-      return { useraddress, address, useraddressadty };
+      return { useraddress };
     } catch (error) {
       throw new Error(error.message);
     }
@@ -737,7 +834,7 @@ export class UsersService {
         },
       });
       if (!user) {
-        throw new Error(`User with ID ${usduid} not found.`);
+        throw new Error(`Education ID ${usduid} not found.`);
       }
 
       let userdegree;
@@ -851,7 +948,7 @@ export class UsersService {
     });
   }
 
-  //fungsi add experience
+  //fungsi add experience //penambahan search untuk FE
   public async addexperience(id: number, fields: any, search_city: string) {
     try {
       const user = await this.userRepo.findOne({
@@ -863,7 +960,7 @@ export class UsersService {
       if (!user) {
         throw new Error(`User with ID ${id} not found.`);
       }
-      const city = await this.CityRepository.createQueryBuilder('city')
+      const city = await this.CityRepository.createQueryBuilder('city') //penambahan search untuk FE
         .where('city_name ILIKE :search_city', {
           search_city: `%${search_city}%`,
         })
@@ -1005,7 +1102,7 @@ export class UsersService {
     }
   }
 
-  //edit data experience
+  //edit data experience //penambahan search untuk FE
   public async editexperience(
     usexid: number,
     fields: any,
@@ -1021,7 +1118,7 @@ export class UsersService {
       if (!user) {
         throw new Error(`User with ID ${usexid} not found.`);
       }
-      const city = await this.CityRepository.createQueryBuilder('city')
+      const city = await this.CityRepository.createQueryBuilder('city') //penambahan search untuk FE
         .where('city_name ILIKE :search_city', {
           search_city: `%${search_city}%`,
         })
@@ -1031,7 +1128,7 @@ export class UsersService {
         throw new Error(`City with name ${search_city} not found.`);
       }
 
-      // const cityId = city.cityId;
+      const cityId = city.cityId;
 
       let startMonth;
       if (fields.start === 'Januari') {
@@ -1149,7 +1246,7 @@ export class UsersService {
           usexTitle: fields.tittle,
           usexProfileHeadline: fields.headline,
           usexCompanyName: fields.company,
-          // usexCityId: cityId,
+          usexCityId: cityId,
           usexStartDate: usexStartDate,
           usexEndDate: usexEndDate,
           usexIndustry: fields.industry,
@@ -1172,7 +1269,7 @@ export class UsersService {
     });
   }
   ///  penambahan userskill
-  //fungsi add skill
+  //fungsi add skill //penambahan search untuk FE
   public async addskill(id: number, search_skill: string) {
     try {
       if (search_skill) {
@@ -1191,7 +1288,7 @@ export class UsersService {
 
         const skillType = await this.SkillTypeRepository.createQueryBuilder(
           'skill_type',
-        )
+        ) //penambahan search untuk FE
           .where('skty_name ILIKE :search_skill', {
             search_skill: `%${search_skill}%`,
           })

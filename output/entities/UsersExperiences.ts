@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import {
   Column,
   Entity,
@@ -86,9 +87,8 @@ export class UsersExperiences {
   })
   usexExperienceType: string | null;
 
-  @ManyToOne(() => City, (city) => city.usersExperiences)
-  @JoinColumn([{ name: "usex_city_id", referencedColumnName: "cityId" }])
-  usexCity: City;
+  @Column("integer", { name: "usex_city_id", nullable: true })
+  usexCityId: number | null;
 
   @ManyToOne(() => Users, (users) => users.usersExperiences)
   @JoinColumn([
